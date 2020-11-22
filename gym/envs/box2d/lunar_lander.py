@@ -95,6 +95,9 @@ class LunarLander(gym.Env, EzPickle):
         self.moon = None
         self.lander = None
         self.particles = []
+        self.terrain_y_values = np.array([1,2,3,2,5,1,2,4,5,3,1,1,3,6]) # self.np_random.uniform(0, 400/60, size=(12,) )
+        self.goal_x = 8 # len(self.terrain_y_values)//2
+
 
         self.prev_reward = None
 
@@ -115,6 +118,13 @@ class LunarLander(gym.Env, EzPickle):
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
+    
+    def load_terrain(self, y_values):
+        self.terrain_y_values = y_values
+    
+    def set_helipad(self, goal_x):
+        self.goal_x = goal_x
+
 
     def _destroy(self):
         if not self.moon: return
@@ -138,17 +148,20 @@ class LunarLander(gym.Env, EzPickle):
         H = VIEWPORT_H/SCALE
 
         # terrain
-        CHUNKS = 11
-        height = self.np_random.uniform(0, H/2, size=(CHUNKS+1,))
+        CHUNKS = len(self.terrain_y_values) - 1
+        height = self.terrain_y_values
         chunk_x = [W/(CHUNKS-1)*i for i in range(CHUNKS)]
-        self.helipad_x1 = chunk_x[CHUNKS//2-1]
-        self.helipad_x2 = chunk_x[CHUNKS//2+1]
+
+        self.helipad_x1 = chunk_x[self.goal_x-1]
+        self.helipad_x2 = chunk_x[self.goal_x+1]
         self.helipad_y = H/4
-        height[CHUNKS//2-2] = self.helipad_y
-        height[CHUNKS//2-1] = self.helipad_y
-        height[CHUNKS//2+0] = self.helipad_y
-        height[CHUNKS//2+1] = self.helipad_y
-        height[CHUNKS//2+2] = self.helipad_y
+
+        height[self.goal_x-2] = self.helipad_y
+        height[self.goal_x-1] = self.helipad_y
+        height[self.goal_x+0] = self.helipad_y
+        height[self.goal_x+1] = self.helipad_y
+        height[self.goal_x+2] = self.helipad_y
+
         smooth_y = [0.33*(height[i-1] + height[i+0] + height[i+1]) for i in range(CHUNKS)]
 
         self.moon = self.world.CreateStaticBody(shapes=edgeShape(vertices=[(0, 0), (W, 0)]))
